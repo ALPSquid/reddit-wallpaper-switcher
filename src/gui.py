@@ -1,4 +1,5 @@
 import wx
+import utils
 
 
 def create_menu_item(menu, label, func):
@@ -7,16 +8,17 @@ def create_menu_item(menu, label, func):
     menu.AppendItem(item)
     return item
 
+
 class TaskBarIcon(wx.TaskBarIcon):
-    def __init__(self, _RwsBase):
+    def __init__(self, _rws_base):
         super(TaskBarIcon, self).__init__()
-        self.RwsBase = _RwsBase
+        self.rws_base = _rws_base
         self.TRAY_TOOLTIP = "Reddit Wallpaper Switcher"
-        self.TRAY_ICON = self.RwsBase.ASSETS_PATH+"/icon.ico"
+        self.TRAY_ICON = self.rws_base.ASSETS_PATH+"/icon.ico"
         self.set_icon(self.TRAY_ICON)
         self.Bind(wx.EVT_TASKBAR_LEFT_DOWN, self.clicked)
 
-    def CreatePopupMenu(self):
+    def create_popup_menu(self):
         menu = wx.Menu()
         create_menu_item(menu, 'Change Wallpaper', self.change_wallpaper)
         menu.AppendSeparator()
@@ -28,16 +30,20 @@ class TaskBarIcon(wx.TaskBarIcon):
         self.SetIcon(icon, self.TRAY_TOOLTIP)
 
     def clicked(self, event):
-        self.RwsBase.change_wallpaper()
+        self.rws_base.change_wallpaper()
 
     def change_wallpaper(self, event):
-        self.RwsBase.change_wallpaper()
+        self.rws_base.change_wallpaper()
 
     def exit(self, event):
-        self.RwsBase.quit_app = True
+        self.rws_base.quit_app = True
         wx.CallAfter(self.Destroy)
 
-def main(RwsBase):
+
+def main(rws_base):
+    #TODO: This isn't working on Linux; it ends immediately
     app = wx.App()
-    task_bar = TaskBarIcon(RwsBase)
+    task_bar = TaskBarIcon(rws_base)
+    utils.log("GUI Started", utils.MsgTypes.INFO)
     app.MainLoop()
+    utils.log("GUI Ended", utils.MsgTypes.INFO)

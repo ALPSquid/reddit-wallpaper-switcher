@@ -1,38 +1,36 @@
-from bs4 import BeautifulSoup
-import GUI
+import gui
 import threading
-import urlparse
 import os
+import urlparse
 import urllib2
 import random
 import time
 import getpass
 import shutil
+import utils
+from bs4 import BeautifulSoup
 
 
 class RedditWallpaperSwitcherBase(object):
 
     def __init__(self):
-        # ---- Variables
         self.WALLPAPERS_URL = "http://www.reddit.com/r/wallpaper+wallpapers"
-        self.PROJECT_PATH = self.get_app_dir()
+        self.PROJECT_PATH = utils.get_app_dir()
         self.IMAGES_PATH = self.PROJECT_PATH+"/files/Images"
         self.TEMP_PATH = self.PROJECT_PATH+"/files/Temp"
         self.ASSETS_PATH = self.PROJECT_PATH+"/assets"
         self.WALLPAPER_PATH = self.PROJECT_PATH+"/files/CurrentWallpaper.png"
         self.APP_USER = getpass.getuser()
-        self.SWITCH_INTERVAL = 15*60
+        self.SWITCH_INTERVAL = 15 * 60
+
         self.internet_connection = False
         self.connection_attempt = 1
         self.first_run = True
         self.quit_app = False
         self.threads = []
-        self.soup = None
-
         self.spaces = ""
         for i in range(75):
             self.spaces += " "
-        # ----
 
     def run_thread(self, target):
         """
@@ -46,43 +44,13 @@ class RedditWallpaperSwitcherBase(object):
         method_thread.start()
         self.threads.append(method_thread)
 
-    def get_app_dir(self):
-        """
-        Return the app directory
-        """
-        path = os.path.dirname(__file__)
-        if(".zip" in path):
-            path, zip = os.path.split(path)
-        return path
-
     def print_line(self, string):
-        """
-        Print to same line
-
-        Keyword arguments:
-        string -- String to print
-
-        """
         print("\r"+self.spaces)  # Clear line
         print("\r"+str(string))
 
-    def string_contains(self, string, *substrings):
-        """
-        Check if string contains all substrings
-
-        Keyword arguments:
-        string -- string to check
-        substrings -- strings to find
-
-        """
-        for substring in substrings:
-            if(substring in string):
-                return True
-        return False
-
     def open_web_page(self, target_url):
         """
-        Get BeautifulSoup HTML of page
+        Get BeautifulSoup HTML of target_url
 
         Keyword arguments:
         target_url -- URL to get source of
@@ -91,35 +59,39 @@ class RedditWallpaperSwitcherBase(object):
         while 1:
             try:
                 url_content = urllib2.urlopen(target_url).read()
-                self.soup = BeautifulSoup(''.join(url_content))
+                soup = BeautifulSoup(''.join(url_content))
                 break
             except EnvironmentError as ex:
+                #TODO: Handle this
                 print("Error opening web page: '"+str(ex)+"'")
+                soup = ""
+        return soup
 
-    def get_images(self, target_url, message):
+    def get_images(self, target_soup, message):
         """
         Download Images from url if it doesn't exit
 
         Keyword arguments:
-        target_url -- URL to get images from
+        target_soup -- soup to get images from
         message -- informative message to print
 
         """
+
         print(message)
         number = 1
         try:
-            if(not os.path.exists(self.TEMP_PATH)):
+            if not os.path.exists(self.TEMP_PATH):
                 os.makedirs(self.TEMP_PATH)
-        except:
+        except OSError as ex:
+            #TODO: Handle this
             pass
         try:
-            for img in self.soup.findAll("a"):
+            #TODO: Optimisation: filter this further by attribute
+            for img in target_soup.findAll("a"):
                 try:
-                    if((self.string_contains(img["href"], "i.imgur", ".jpg", ".png"))
-                       and (not self.string_contains(img["href"], "www.", "domain/"))):
+                    if((utils.string_contains(img["href"], "i.imgur", ".jpg", ".png"))
+                       and (not utils.string_contains(img["href"], "www.", "domain/"))):
                         try:
-                            # if(number <= 25):
-                            # else: print("Got to end of page")
                             img_url = img["href"]
                             file_name = os.path.basename(urlparse.urlsplit(img_url)[2])
                             if((not os.path.exists(self.IMAGES_PATH+"/"+file_name))
@@ -130,8 +102,8 @@ class RedditWallpaperSwitcherBase(object):
                                 output.write(img_data)
                                 output.close()
                                 number += 1
-                            elif(not os.path.exists(self.TEMP_PATH+"/"+file_name)):
-                                self.print_line("Image %s exists, skipping" %number)
+                            elif not os.path.exists(self.TEMP_PATH+"/"+file_name):
+                                self.print_line("Image %s exists, skipping" % number)
                                 shutil.copy(self.IMAGES_PATH+"/"+file_name, self.TEMP_PATH+"/"+file_name)
                                 number += 1
 
@@ -143,28 +115,29 @@ class RedditWallpaperSwitcherBase(object):
         except EnvironmentError as ex:
             print("Error finding images: '"+str(ex)+"'")
 
-    def get_page2(self, target_url):
+    def get_page2(self, target_soup):
         """
         Return the url of subreddit page 2
 
         Keyword arguments:
-        target_url -- URL of page 1
+        target_soup -- soup of page 1
 
         """
         try:
-            for a in self.soup.findAll("a"):
+            #TODO: Optimisation: filter this further by attribute
+            for a in target_soup.findAll("a"):
                 try:
-                    if(self.WALLPAPERS_URL+"/?count=25&after=" in a["href"]):
+                    if self.WALLPAPERS_URL+"/?count=25&after=" in a["href"]:
                         page2_url = a["href"]
                         return page2_url
                 except KeyError:
                     pass
         except EnvironmentError as ex:
-            print("Error finding images: '"+str(ex)+"'")
+            utils.log("Error finding images: '"+str(ex)+"'", utils.MsgTypes.ERROR)
 
     def set_wallpaper(self, file_name):
         """
-        Set the OS wallpaper. OS specific
+        Set the OS wallpaper. OS specific, implement in respective class
 
         Keyword arguments:
         file_name -- file to set as wallpaper
@@ -182,56 +155,54 @@ class RedditWallpaperSwitcherBase(object):
         """
         Main download and switch workflow
         """
-        if(not os.path.exists(self.IMAGES_PATH)):
+        if not os.path.exists(self.IMAGES_PATH):
             os.makedirs(self.IMAGES_PATH)
-        if(os.path.exists(self.TEMP_PATH)):
+        if os.path.exists(self.TEMP_PATH):
             shutil.rmtree(self.TEMP_PATH)
-        if(self.first_run):
-            #TODO: this
-            time.sleep(15)  # Wait for os to connect to internet
+        if self.first_run:
+            time.sleep(15)  # Wait for os to connect to the internet (bit of a quick workaround)
             self.first_run = False
         try:
             urllib2.urlopen("http://www.google.com", timeout=5)
             self.internet_connection = True
         except urllib2.URLError:
-            print("No Internet Connection")
+            utils.log("No Internet Connection", utils.MsgTypes.INFO)
             self.internet_connection = False
-        ##
-        if(self.internet_connection):
-            self.open_web_page(self.WALLPAPERS_URL)
-            self.get_images(self.WALLPAPERS_URL, "\nDownloading Images from page 1")
 
-            page2_url = self.get_page2(self.WALLPAPERS_URL)
-            self.open_web_page(page2_url)
-            self.get_images(page2_url, "Downloading Images from page 2")
+        if self.internet_connection:
+            soup = self.open_web_page(self.WALLPAPERS_URL)
+            self.get_images(soup, "\nDownloading Images from page 1")
+
+            page2_url = self.get_page2(soup)
+            soup = self.open_web_page(page2_url)
+            self.get_images(soup, "Downloading Images from page 2")
             print("\n")
 
             try:
-                if(os.path.exists(self.IMAGES_PATH)):
+                if os.path.exists(self.IMAGES_PATH):
                     shutil.rmtree(self.IMAGES_PATH)
                 os.rename(self.TEMP_PATH, self.IMAGES_PATH)
             except EnvironmentError as ex:
                 print("Error changing '/files/temp' to '/files/images': '"+str(ex)+"'")
             print("Finished Downloading Images")
 
-        print("Setting Wallpaper")
+        utils.log("Setting Wallpaper", utils.MsgTypes.INFO)
         self.change_wallpaper()
-
 
     def schedule(self):
         """
         Automatic background switching process
         """
-        while(not self.quit_app):
+        while not self.quit_app:
             self.main_tasks()
             for i in range(self.SWITCH_INTERVAL):
-                if(not self.quit_app):
+                if not self.quit_app:
                     time.sleep(1)
-        print("Schedule Finished")
+        utils.log("Schedule Finished", utils.MsgTypes.INFO)
 
     def main(self):
         self.run_thread(self.schedule)
-        GUI.main(self)
+        gui.main(self)
         for thread in self.threads:
             thread.join()
 

@@ -10,4 +10,10 @@ http://squidtopusstudios.com/software/stuff/rws
  - Coming Soon
 
 <b>Building From Source</b>
- - Coming Soon
+ Python 2.7 is required
+ 
+ - Required packages
+  The following python libraries are required to build RWS.
+  - beautifulsoup4
+  - wxpython
+  - Python Imaging Library (http://www.pythonware.com/products/pil)
