@@ -10,6 +10,7 @@ http://squidtopusstudios.com/software/stuff/rws
  - Coming Soon
 
 <b>Building From Source</b>
+
  Python 2.7 is required
  
  - Required packages
@@ -17,3 +18,5 @@ http://squidtopusstudios.com/software/stuff/rws
   - beautifulsoup4
   - wxpython
   - Python Imaging Library (http://www.pythonware.com/products/pil)
+
+ - Instructions and build scripts coming soon
