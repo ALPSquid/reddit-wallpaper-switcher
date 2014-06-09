@@ -18,6 +18,8 @@ lib64/
 parts/
 sdist/
 var/
+src/tests/
+src/files/
 *.egg-info/
 .installed.cfg
 *.egg
@@ -51,4 +53,12 @@ coverage.xml
 
 # Sphinx documentation
 docs/_build/
+
+# IntelliJ
+*.iml
+.idea/
+
+# Misc
+*~
+Thumbs.db
 
