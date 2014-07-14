@@ -18,5 +18,8 @@ http://squidtopusstudios.com/software/stuff/rws
   - beautifulsoup4
   - wxpython
   - Python Imaging Library (http://www.pythonware.com/products/pil)
+  - CX_Freeze (For provided build scripts)
 
- - Instructions and build scripts coming soon
+ - Win32
+  1. Run "cx_setup_win32.py" found in the "scripts" folder
+  2. Copy the "src/assets" folder into the output directory. This is usually "x/build/platform-pyversion"
